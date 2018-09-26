@@ -1,0 +1,45 @@
+---
+title: "Laboratorio 3"
+author: "Oliver Mazariegos, Rafael Leon y Alejandro Vasquez"
+date: "19/09/2018"
+output: 
+  html_document:
+
+    number_sections: false
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+    
+    self_contained: true
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(quanteda)
+library(wordcloud)
+library(tm)
+library(RWeka)
+library(ngram)
+```
+
+# Cargar Datos
+
+```{r cargarDatos}
+twittertxt = readLines("data/en_us.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb') # se descargara de tipo binario por todos los caracteres desconocidos, sean emojis, nulls, etc.
+newstxt = readLines(newscon)  
+close(newscon)
+rm(newscon) 
+todotxt = c(twittertxt,blogtxt,newstxt) 
+```
