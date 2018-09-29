@@ -1,4 +1,4 @@
-install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram"))
+#install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram"))
 
 
 library("RCurl")
@@ -49,3 +49,27 @@ tweets <- tm_map(tweets, removeWords, c(stopwords("english")))
 blogs <- tm_map(blogs, removeWords, c(stopwords("english")))
 news <- tm_map(news, removeWords, c(stopwords("english")))
 
+#remueve los numeros
+tweets <- tm_map(tweets, removeNumbers)
+blogs <- tm_map(blogs, removeNumbers)
+news <- tm_map(news, removeNumbers)
+
+
+# partir el corpus
+tweets_sample <- sample(tweets, round(2360148*0.05))
+blogs_sample <- sample(blogs, round(899288*0.05))
+news_sample <- sample(news, round(2360148*0.05))
+ 
+# crea matriz de terminos
+tweet_tdm <- TermDocumentMatrix(tweets)
+findFreqTerms(tweet_tdm, lowfreq=30)
+
+blog_tdm <- TermDocumentMatrix(blogs)
+findFreqTerms(blog_tdm, lowfreq=30)
+
+news_tdm <- TermDocumentMatrix(news)
+findFreqTerms(news, lowfreq=30)
+
+rm(tweet_corpus)
+rm(news_corpus)
+rm(blog_corpus)
