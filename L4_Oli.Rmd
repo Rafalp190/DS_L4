@@ -30,6 +30,8 @@ library(wordcloud)
 library(tm)
 library(RWeka)
 library(ngram)
+library(wordcloud)
+library(ggplot2)
 ```
 
 # Cargar Datos
@@ -41,5 +43,189 @@ newscon = file("data/en_US.news.txt", 'rb') # se descargara de tipo binario por 
 newstxt = readLines(newscon)  
 close(newscon)
 rm(newscon) 
-todotxt = c(twittertxt,blogtxt,newstxt) 
 ```
+
+# Limpieza de Datos
+
+```{r preprocesamiento, warnings=FALSE, message=F}
+set.seed(123)
+
+twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb')
+
+newstxt = readLines(newscon) 
+
+twitter_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
+blog_txt = iconv(blogtxt, to="ASCII//TRANSLIT")
+news_txt = iconv(newstxt, to="ASCII//TRANSLIT")
+
+tweet_corpus <- Corpus(VectorSource(twitter_txt))
+blog_corpus <- Corpus(VectorSource(blog_txt))
+news_corpus <- Corpus(VectorSource(news_txt))
+
+rm(twittertxt)
+rm(twitter_txt)
+rm(blogtxt)
+rm(blog_txt)
+rm(newscon)
+rm(newstxt)
+rm(news_txt)
+
+# partir el corpus
+tweets_sample <- sample(tweet_corpus, round(2360148*0.01))
+blogs_sample <- sample(blog_corpus, round(899288*0.01))
+news_sample <- sample(news_corpus, round(1010242*0.01))
+
+
+rm(tweet_corpus)
+rm(news_corpus)
+rm(blog_corpus)
+
+
+# lleva a minúsculas
+tweets  <- tm_map(tweets_sample, tolower)
+blogs  <- tm_map(blogs_sample, tolower)
+news  <- tm_map(news_sample, tolower)
+
+rm(tweets_sample)
+rm(news_sample)
+rm(blogs_sample)
+
+# quita espacios en blanco
+tweets  <- tm_map(tweets, stripWhitespace)
+blogs  <- tm_map(blogs, stripWhitespace)
+news  <- tm_map(news, stripWhitespace)
+
+# remueve la puntuación
+tweets  <- tm_map(tweets, removePunctuation)
+blogs  <- tm_map(blogs, removePunctuation)
+news  <- tm_map(news, removePunctuation)
+
+# remueve palabras vacias genericas
+tweets <- tm_map(tweets, removeWords, c(stopwords("english")))
+blogs <- tm_map(blogs, removeWords, c(stopwords("english")))
+news <- tm_map(news, removeWords, c(stopwords("english")))
+
+#remueve los numeros
+tweets <- tm_map(tweets, removeNumbers)
+blogs <- tm_map(blogs, removeNumbers)
+news <- tm_map(news, removeNumbers)
+
+
+
+ 
+# crea matriz de terminos
+tweet_tdm <- TermDocumentMatrix(tweets)
+#findFreqTerms(tweet_tdm, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(tweet_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+tweet_freq <- data.frame(word = names(v),freq=v)
+
+blog_tdm <- TermDocumentMatrix(blogs)
+#findFreqTerms(blog_tdm, lowfreq=30)
+## Dataframe de frecuencias
+m <- as.matrix(blog_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+blog_freq <- data.frame(word = names(v),freq=v)
+
+news_tdm <- TermDocumentMatrix(news)
+#findFreqTerms(news, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(news_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+news_freq <- data.frame(word = names(v),freq=v)
+
+rm(m)
+rm(v)
+```
+
+# Analisis Exploratorio
+
+
+## Palabras que mas se repiten{.tabset .tabset-fade}
+
+
+### Twitter
+
+```{r freqT}
+head(tweet_freq,5)
+```
+
+### Blog
+
+```{r freqB}
+head(blog_freq,5)
+```
+
+### News
+
+```{r freqN}
+head(news_freq,5)
+```
+
+## Nube de palabras{.tabset .tabset-fade}
+
+### Twitter
+
+```{r cloudT,message=F}
+wordcloud(tweet_freq$word,tweet_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+### Blog
+
+```{r cloudB,message=F}
+wordcloud(blog_freq$word,blog_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+### News
+
+```{r cloudN,message=F}
+wordcloud(news_freq$word,news_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+## Histograma de Palabras Frecuentes{.tabset .tabset-fade}
+
+### Twitter
+
+```{r histT}
+tweet_freq = tweet_freq[order(-tweet_freq$freq),]
+ggplot(data = head(tweet_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+### Blog
+
+```{r histB}
+blog_freq = blog_freq[order(-blog_freq$freq),]
+ggplot(data = head(blog_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+### News
+
+```{r histN}
+news_freq = news_freq[order(-news_freq$freq),]
+ggplot(data = head(news_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+## Discusion
+
+
+
