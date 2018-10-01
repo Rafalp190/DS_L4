@@ -15,7 +15,7 @@ newstxt = readLines(newscon)
 
 twitter_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
 blog_txt = iconv(blogtxt, to="ASCII//TRANSLIT")
-news_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
+news_txt = iconv(newstxt, to="ASCII//TRANSLIT")
 
 tweet_corpus <- Corpus(VectorSource(twitter_txt))
 blog_corpus <- Corpus(VectorSource(blog_txt))
@@ -29,10 +29,25 @@ rm(newscon)
 rm(newstxt)
 rm(news_txt)
 
+# partir el corpus
+tweets_sample <- sample(tweet_corpus, round(2360148*0.03))
+blogs_sample <- sample(blog_corpus, round(899288*0.03))
+news_sample <- sample(news_corpus, round(1010242*0.03))
+
+
+rm(tweet_corpus)
+rm(news_corpus)
+rm(blog_corpus)
+
+
 # lleva a minúsculas
-tweets  <- tm_map(tweet_corpus, tolower)
-blogs  <- tm_map(blog_corpus, tolower)
-news  <- tm_map(news_corpus, tolower)
+tweets  <- tm_map(tweets_sample, tolower)
+blogs  <- tm_map(blogs_sample, tolower)
+news  <- tm_map(news_sample, tolower)
+
+rm(tweets_sample)
+rm(news_sample)
+rm(blogs_sample)
 
 # quita espacios en blanco
 tweets  <- tm_map(tweets, stripWhitespace)
@@ -55,21 +70,36 @@ blogs <- tm_map(blogs, removeNumbers)
 news <- tm_map(news, removeNumbers)
 
 
-# partir el corpus
-tweets_sample <- sample(tweets, round(2360148*0.05))
-blogs_sample <- sample(blogs, round(899288*0.05))
-news_sample <- sample(news, round(2360148*0.05))
+
  
 # crea matriz de terminos
 tweet_tdm <- TermDocumentMatrix(tweets)
-findFreqTerms(tweet_tdm, lowfreq=30)
+tweet_terms <- findFreqTerms(tweet_tdm, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(tweet_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+tweet_freq <- data.frame(word = names(v),freq=v)
 
 blog_tdm <- TermDocumentMatrix(blogs)
 findFreqTerms(blog_tdm, lowfreq=30)
+## Dataframe de frecuencias
+m <- as.matrix(blog_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+blog_freq <- data.frame(word = names(v),freq=v)
 
 news_tdm <- TermDocumentMatrix(news)
 findFreqTerms(news, lowfreq=30)
 
-rm(tweet_corpus)
-rm(news_corpus)
-rm(blog_corpus)
+## Dataframe de frecuencias
+m <- as.matrix(news_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+tweet_freq <- data.frame(word = names(v),freq=v)
+
+
