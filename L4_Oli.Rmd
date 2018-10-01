@@ -14,6 +14,8 @@ output:
     fig_height: 6
     
     self_contained: true
+    
+    df_print: kable
 
     theme: cosmo
 
@@ -47,7 +49,7 @@ rm(newscon)
 
 # Limpieza de Datos
 
-```{r preprocesamiento, warnings=FALSE, message=F}
+```{r preprocesamiento, warning=FALSE, message=F}
 set.seed(123)
 
 twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
@@ -149,53 +151,19 @@ rm(m)
 rm(v)
 ```
 
-# Analisis Exploratorio
+# Palabras que mas se repiten
 
 
-## Palabras que mas se repiten{.tabset .tabset-fade}
+## Twitter{.tabset .tabset-fade}
 
 
-### Twitter
+### Top 10
 
 ```{r freqT}
-head(tweet_freq,5)
+head(tweet_freq,10)
 ```
 
-### Blog
-
-```{r freqB}
-head(blog_freq,5)
-```
-
-### News
-
-```{r freqN}
-head(news_freq,5)
-```
-
-## Nube de palabras{.tabset .tabset-fade}
-
-### Twitter
-
-```{r cloudT,message=F}
-wordcloud(tweet_freq$word,tweet_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
-```
-
-### Blog
-
-```{r cloudB,message=F}
-wordcloud(blog_freq$word,blog_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
-```
-
-### News
-
-```{r cloudN,message=F}
-wordcloud(news_freq$word,news_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
-```
-
-## Histograma de Palabras Frecuentes{.tabset .tabset-fade}
-
-### Twitter
+### Histograma de Palabras
 
 ```{r histT}
 tweet_freq = tweet_freq[order(-tweet_freq$freq),]
@@ -205,7 +173,26 @@ ggplot(data = head(tweet_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)
   coord_flip()
 ```
 
-### Blog
+
+
+### Nube de Palabras
+
+```{r cloudT,message=F}
+wordcloud(tweet_freq$word,tweet_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+
+
+## Blogs{.tabset .tabset-fade}
+
+### Top 10
+
+```{r freqB}
+head(blog_freq,10)
+```
+
+
+### Histograma de Palabras
 
 ```{r histB}
 blog_freq = blog_freq[order(-blog_freq$freq),]
@@ -215,7 +202,23 @@ ggplot(data = head(blog_freq,30), aes(x= reorder(word,freq),y=freq,fill = word))
   coord_flip()
 ```
 
-### News
+
+### Nube de palabras
+
+```{r cloudB,message=F}
+wordcloud(blog_freq$word,blog_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+
+## News{.tabset .tabset-fade}
+
+### Top 10
+
+```{r freqN}
+head(news_freq,10)
+```
+
+### Histograma dee Palabras
 
 ```{r histN}
 news_freq = news_freq[order(-news_freq$freq),]
@@ -224,6 +227,13 @@ ggplot(data = head(news_freq,30), aes(x= reorder(word,freq),y=freq,fill = word))
   xlab("Word") + 
   coord_flip()
 ```
+
+### Nube de Palabras
+
+```{r cloudN,message=F}
+wordcloud(news_freq$word,news_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
 
 ## Discusion
 
