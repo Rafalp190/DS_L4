@@ -7,6 +7,8 @@ library("wordcloud")
 library("quanteda")
 library("ngram")
 
+set.seed(123)
+
 twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
 blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
 newscon = file("data/en_US.news.txt", 'rb')
@@ -30,9 +32,9 @@ rm(newstxt)
 rm(news_txt)
 
 # partir el corpus
-tweets_sample <- sample(tweet_corpus, round(2360148*0.03))
-blogs_sample <- sample(blog_corpus, round(899288*0.03))
-news_sample <- sample(news_corpus, round(1010242*0.03))
+tweets_sample <- sample(tweet_corpus, round(2360148*0.01))
+blogs_sample <- sample(blog_corpus, round(899288*0.01))
+news_sample <- sample(news_corpus, round(1010242*0.01))
 
 
 rm(tweet_corpus)
@@ -74,7 +76,7 @@ news <- tm_map(news, removeNumbers)
  
 # crea matriz de terminos
 tweet_tdm <- TermDocumentMatrix(tweets)
-tweet_terms <- findFreqTerms(tweet_tdm, lowfreq=30)
+#findFreqTerms(tweet_tdm, lowfreq=30)
 
 ## Dataframe de frecuencias
 m <- as.matrix(tweet_tdm)
@@ -84,7 +86,7 @@ v <- sort(rowSums(m),decreasing=TRUE)
 tweet_freq <- data.frame(word = names(v),freq=v)
 
 blog_tdm <- TermDocumentMatrix(blogs)
-findFreqTerms(blog_tdm, lowfreq=30)
+#findFreqTerms(blog_tdm, lowfreq=30)
 ## Dataframe de frecuencias
 m <- as.matrix(blog_tdm)
 
@@ -93,13 +95,14 @@ v <- sort(rowSums(m),decreasing=TRUE)
 blog_freq <- data.frame(word = names(v),freq=v)
 
 news_tdm <- TermDocumentMatrix(news)
-findFreqTerms(news, lowfreq=30)
+#findFreqTerms(news, lowfreq=30)
 
 ## Dataframe de frecuencias
 m <- as.matrix(news_tdm)
 
 v <- sort(rowSums(m),decreasing=TRUE)
 
-tweet_freq <- data.frame(word = names(v),freq=v)
+news_freq <- data.frame(word = names(v),freq=v)
 
-
+rm(m)
+rm(v)
