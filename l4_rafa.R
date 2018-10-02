@@ -1,11 +1,14 @@
-#install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram"))
+#install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram", "devtools"))
 
+library("devtools")
 library("dplyr")
 library("RCurl")
 library("tm")
 library("wordcloud")
 library("quanteda")
 library("ngram")
+
+install_github("jasonkdavis/r-cmscu")
 
 set.seed(123)
 
@@ -184,11 +187,9 @@ blog_ngram_freq <- rbind(blog_freq, rbind(bi_blog_freq, tri_blog_freq)) %>%
 news_ngram_freq <- rbind(news_freq, rbind(bi_news_freq, tri_news_freq)) %>% 
   arrange(desc(freq))
 
-rm(list = c('bi_blog_freq', 'bi_news_freq', 'bi_tweet_freq', 'blog_bigram', 'blog_corpus'
-            , 'blog_tdm', 'blog_trigram', 'blogs', 'm', 'news', 'news_bigram', 'news_trigram', 
-            'news_corpus', 'tri_blog_freq', 'tri_news_freq', 'tri_twitter_freq', 'blog_freq',
-            'news_freq', 'news_tdm', 'tweet_bigram', 'tweet_corpus', 'tweet_freq', 'tweet_tdm',
-            'tweets', 'twitter_trigram'
+rm(list = c('blog_bigram', 'blog_corpus', 'blog_tdm', 'blog_trigram', 'blogs', 'm', 'news',
+            'news_bigram', 'news_trigram', 'news_corpus', 'news_tdm', 'tweet_corpus', 
+            'tweet_tdm', 'tweets', 'twitter_trigram'
             ))
 
 # Funcion de KNP
