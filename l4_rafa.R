@@ -1,6 +1,6 @@
-#install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram", "devtools"))
+#install.packages(c("RCurl", "tm", "wordcloud", "quanteda", "ngram"))
 
-library("devtools")
+
 library("dplyr")
 library("RCurl")
 library("tm")
@@ -8,7 +8,7 @@ library("wordcloud")
 library("quanteda")
 library("ngram")
 
-install_github("jasonkdavis/r-cmscu")
+
 
 set.seed(123)
 
@@ -93,7 +93,8 @@ m <- as.matrix(tweet_tdm)
 
 v <- sort(rowSums(m),decreasing=TRUE)
 
-tweet_freq <- data.frame(word = names(v),freq=v)
+tweet_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
 
 blog_tdm <- TermDocumentMatrix(blogs)
 #findFreqTerms(blog_tdm, lowfreq=30)
@@ -102,7 +103,9 @@ m <- as.matrix(blog_tdm)
 
 v <- sort(rowSums(m),decreasing=TRUE)
 
-blog_freq <- data.frame(word = names(v),freq=v)
+blog_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 news_tdm <- TermDocumentMatrix(news)
 #findFreqTerms(news, lowfreq=30)
@@ -112,7 +115,9 @@ m <- as.matrix(news_tdm)
 
 v <- sort(rowSums(m),decreasing=TRUE)
 
-news_freq <- data.frame(word = names(v),freq=v)
+news_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 #Funciones para hacer bi y trigramas
 
@@ -129,7 +134,9 @@ tweet_bigram <-  TermDocumentMatrix(tweet_corpus,
 m <- as.matrix(tweet_bigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-bi_tweet_freq <- data.frame(word = names(v),freq=v)
+bi_tweet_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 #Bigrama de blogs
 blog_bigram <-  TermDocumentMatrix(blog_corpus,
@@ -138,7 +145,9 @@ blog_bigram <-  TermDocumentMatrix(blog_corpus,
 m <- as.matrix(blog_bigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-bi_blog_freq <- data.frame(word = names(v),freq=v)
+bi_blog_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 #Bigrama de news
 news_bigram <-  TermDocumentMatrix(news_corpus,
@@ -147,7 +156,9 @@ news_bigram <-  TermDocumentMatrix(news_corpus,
 m <- as.matrix(news_bigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-bi_news_freq <- data.frame(word = names(v),freq=v)
+bi_news_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 
 ## Trigramas
@@ -158,7 +169,9 @@ twitter_trigram <- tm::TermDocumentMatrix(tweet_corpus,
 m <- as.matrix(twitter_trigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-tri_twitter_freq <- data.frame(word = names(v),freq=v)
+tri_twitter_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 #Trigrama blogs
 blog_trigram <- tm::TermDocumentMatrix(blog_corpus, 
@@ -166,7 +179,9 @@ blog_trigram <- tm::TermDocumentMatrix(blog_corpus,
 m <- as.matrix(blog_trigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-tri_blog_freq <- data.frame(word = names(v),freq=v)
+tri_blog_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 #Trigrama news
 news_trigram <- tm::TermDocumentMatrix(news_corpus, 
@@ -174,7 +189,9 @@ news_trigram <- tm::TermDocumentMatrix(news_corpus,
 m <- as.matrix(news_trigram)
 v <- sort(rowSums(m),decreasing=TRUE)
 
-tri_news_freq <- data.frame(word = names(v),freq=v)
+tri_news_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
 
 
 # dataframes de frecuencias de ngramas
@@ -189,7 +206,8 @@ news_ngram_freq <- rbind(news_freq, rbind(bi_news_freq, tri_news_freq)) %>%
 
 rm(list = c('blog_bigram', 'blog_corpus', 'blog_tdm', 'blog_trigram', 'blogs', 'm', 'news',
             'news_bigram', 'news_trigram', 'news_corpus', 'news_tdm', 'tweet_corpus', 
-            'tweet_tdm', 'tweets', 'twitter_trigram'
+            'tweet_tdm', 'tweets', 'twitter_trigram', 'tweet_bigram', 'v',
+            'tweet_freq', 'blog_freq', 'news_freq', 'bi_blog_freq', 'bi_news_freq', 
+            'bi_tweet_freq', 'tri_blog_freq', 'tri_news_freq', 'tri_twitter_freq'
             ))
 
-# Funcion de KNP
