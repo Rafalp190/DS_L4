@@ -1,0 +1,452 @@
+---
+title: "Laboratorio 3"
+author: "Oliver Mazariegos, Rafael Leon y Alejandro Vasquez"
+date: "19/09/2018"
+output: 
+  html_document:
+
+    number_sections: false
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+    
+    self_contained: true
+    
+    df_print: kable
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quanteda)
+library(wordcloud)
+library(tm)
+library(RWeka)
+library(ngram)
+library(wordcloud)
+library(ggplot2)
+library("tidyr")
+library("dplyr")
+```
+
+# Cargar Datos
+
+```{r cargarDatos}
+twittertxt = readLines("data/en_us.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb') # se descargara de tipo binario por todos los caracteres desconocidos, sean emojis, nulls, etc.
+newstxt = readLines(newscon)  
+close(newscon)
+rm(newscon) 
+```
+
+# Limpieza de Datos
+
+```{r preprocesamiento, warning=FALSE, message=F}
+set.seed(123)
+
+twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb')
+
+newstxt = readLines(newscon) 
+
+twitter_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
+blog_txt = iconv(blogtxt, to="ASCII//TRANSLIT")
+news_txt = iconv(newstxt, to="ASCII//TRANSLIT")
+
+tweet_corpus <- Corpus(VectorSource(twitter_txt))
+blog_corpus <- Corpus(VectorSource(blog_txt))
+news_corpus <- Corpus(VectorSource(news_txt))
+
+rm(twittertxt)
+rm(twitter_txt)
+rm(blogtxt)
+rm(blog_txt)
+rm(newscon)
+rm(newstxt)
+rm(news_txt)
+
+# partir el corpus
+tweets_sample <- sample(tweet_corpus, round(2360148*0.001))
+blogs_sample <- sample(blog_corpus, round(899288*0.001))
+news_sample <- sample(news_corpus, round(1010242*0.001))
+
+
+rm(tweet_corpus)
+rm(news_corpus)
+rm(blog_corpus)
+
+
+# lleva a minÃºsculas
+tweets  <- tm_map(tweets_sample, tolower)
+blogs  <- tm_map(blogs_sample, tolower)
+news  <- tm_map(news_sample, tolower)
+
+rm(tweets_sample)
+rm(news_sample)
+rm(blogs_sample)
+
+# quita espacios en blanco
+tweets  <- tm_map(tweets, stripWhitespace)
+blogs  <- tm_map(blogs, stripWhitespace)
+news  <- tm_map(news, stripWhitespace)
+
+# remueve la puntuaciÃ³n
+tweets  <- tm_map(tweets, removePunctuation)
+blogs  <- tm_map(blogs, removePunctuation)
+news  <- tm_map(news, removePunctuation)
+
+# remueve palabras vacias genericas
+tweets <- tm_map(tweets, removeWords, c(stopwords("english")))
+blogs <- tm_map(blogs, removeWords, c(stopwords("english")))
+news <- tm_map(news, removeWords, c(stopwords("english")))
+
+#remueve los numeros
+tweets <- tm_map(tweets, removeNumbers)
+blogs <- tm_map(blogs, removeNumbers)
+news <- tm_map(news, removeNumbers)
+
+
+
+ 
+# crea matriz de terminos
+tweet_tdm <- TermDocumentMatrix(tweets)
+#findFreqTerms(tweet_tdm, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(tweet_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+tweet_freq <- data.frame(word = names(v),freq=v)
+
+blog_tdm <- TermDocumentMatrix(blogs)
+#findFreqTerms(blog_tdm, lowfreq=30)
+## Dataframe de frecuencias
+m <- as.matrix(blog_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+blog_freq <- data.frame(word = names(v),freq=v)
+
+news_tdm <- TermDocumentMatrix(news)
+#findFreqTerms(news, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(news_tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+news_freq <- data.frame(word = names(v),freq=v)
+
+rm(m)
+rm(v)
+```
+
+# Palabras que mas se repiten
+
+
+## Twitter{.tabset .tabset-fade}
+
+
+### Top 10
+
+```{r freqT}
+head(tweet_freq,10)
+```
+
+### Histograma de Palabras
+
+```{r histT}
+tweet_freq = tweet_freq[order(-tweet_freq$freq),]
+ggplot(data = head(tweet_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+
+
+### Nube de Palabras
+
+```{r cloudT,message=F}
+wordcloud(tweet_freq$word,tweet_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+
+
+## Blogs{.tabset .tabset-fade}
+
+### Top 10
+
+```{r freqB}
+head(blog_freq,10)
+```
+
+
+### Histograma de Palabras
+
+```{r histB}
+blog_freq = blog_freq[order(-blog_freq$freq),]
+ggplot(data = head(blog_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+
+### Nube de palabras
+
+```{r cloudB,message=F}
+wordcloud(blog_freq$word,blog_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+
+## News{.tabset .tabset-fade}
+
+### Top 10
+
+```{r freqN}
+head(news_freq,10)
+```
+
+### Histograma de Palabras
+
+```{r histN}
+news_freq = news_freq[order(-news_freq$freq),]
+ggplot(data = head(news_freq,30), aes(x= reorder(word,freq),y=freq,fill = word)) +
+  geom_bar(stat = "identity") +
+  xlab("Word") + 
+  coord_flip()
+```
+
+### Nube de Palabras
+
+```{r cloudN,message=F}
+wordcloud(news_freq$word,news_freq$freq,min.freq=30, random.color = F, max.words = 100,colors = 1:30, random.order = F)
+```
+
+## Discusion
+
+La palabra mas repetida en el archivo Twitter fue "just"; en Blogs, "one"; y en News, "said".
+
+Las palabras más repetidas y que se encontraban en los tres archivos fueron: "just", "will", "one" y "can".
+
+
+# Calculo de probabilidades
+
+Utilizamos un 0.1% de los todos los datos, por limitaciones de memoria.
+
+```{r}
+set.seed(123)
+
+twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb')
+
+newstxt = readLines(newscon) 
+
+twitter_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
+blog_txt = iconv(blogtxt, to="ASCII//TRANSLIT")
+news_txt = iconv(newstxt, to="ASCII//TRANSLIT")
+
+
+# partir los textos
+tweets_sample <- sample(twitter_txt, round(2360148*0.001))
+blogs_sample <- sample(blog_txt, round(899288*0.001))
+news_sample <- sample(news_txt, round(1010242*0.001))
+
+
+all_sample <- c(tweets_sample, blogs_sample, news_sample)
+
+all_sample <- VCorpus(VectorSource(all_sample))
+
+rm(twittertxt)
+rm(twitter_txt)
+rm(blogtxt)
+rm(blog_txt)
+rm(newscon)
+rm(newstxt)
+rm(news_txt)
+rm(tweets_sample)
+rm(blogs_sample)
+rm(news_sample)
+
+# lleva a minÃºsculas
+all_sample <- tm_map(all_sample, content_transformer(tolower))
+
+# quita espacios en blanco
+all_sample <- tm_map(all_sample, content_transformer(stripWhitespace))
+
+# remueve la puntuaciÃ³n
+all_sample <- tm_map(all_sample, content_transformer(removePunctuation))
+
+# remueve palabras vacias genericas
+all_sample <- tm_map(all_sample, content_transformer(removeWords), c(stopwords("english")))
+
+#remueve los numeros
+all_sample <- tm_map(all_sample, content_transformer(removeNumbers))
+
+
+## Unigramas
+
+# crea matriz de terminos
+tdm <- TermDocumentMatrix(all_sample)
+#findFreqTerms(tweet_tdm, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+uni_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
+
+#Funciones para hacer bi y trigramas
+
+BigramTokenizer <- function(x) {RWeka::NGramTokenizer(x, RWeka::Weka_control(min=2, max=2))}
+ThreegramTokenizer <- function(x) {RWeka::NGramTokenizer(x, RWeka::Weka_control(min=3, max=3))}
+
+
+## Bigramas
+
+bigram <- TermDocumentMatrix(all_sample, control = list(tokenize = BigramTokenizer))
+
+
+m <- as.matrix(bigram)
+v <- sort(rowSums(m),decreasing=TRUE)
+
+bigram_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq))) %>% 
+  separate(word, c("unigram", "predicted"), " ")
+
+## Trigramas
+
+trigram <- TermDocumentMatrix(all_sample, control = list(tokenize = ThreegramTokenizer))
+
+m <- as.matrix(trigram)
+v <- sort(rowSums(m),decreasing=TRUE)
+
+trigram_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob = (freq/sum(freq))) %>% 
+  separate(word, c("unigram1","unigram2", "predicted"), " ") %>% 
+  mutate(bigram = paste0(unigram1, " ", unigram2)) %>% 
+  select(bigram, everything()) %>% 
+  select(-c(unigram1, unigram2))
+
+rm(list=c('all_sample', 'bigram', 'm', 'tdm', 'trigram'))
+```
+
+
+# Funcion predictora
+
+La funcion puede iniciar con una sola palabra o una frase. En cualquier caso, toma en cuenta la última o las últimas dos palabras de la frase predice la siguiente palabra
+
+```{r}
+predictor <- function(phrase, bi_freq, tri_freq) {
+  words <- strsplit(phrase, " ")[[1]]
+  if (length(words) > 1) {
+    bigram_to_predict <- tail(words, n = 2)
+    tri_df <- tri_freq %>% 
+      filter(bigram == paste0(bigram_to_predict[1], " ", bigram_to_predict[2])) %>% 
+      arrange(desc(prob))
+    return(tri_df[1,]$predicted)
+  }
+  
+  else if (length(words == 1)) {
+    bi_df <- bi_freq %>% 
+      filter(unigram == words) %>% 
+      arrange(desc(prob))
+    return(bi_df[1,]$predicted)
+  }
+}
+```
+
+# Funcion predictora de las proximas tres palabras
+Sencillamente utiliza la funcion anterior para devolver las siguientes tres palabras predichas.
+
+```{r}
+next_three <- function(phrase, bi_freq, tri_freq) {
+  w1 <- predictor(phrase, bi_freq, tri_freq)
+  w2 <- predictor(paste0(phrase, " ", w1), bi_freq, tri_freq)
+  w3 <- predictor(paste0(phrase, " ", w1, " ", w2), bi_freq, tri_freq)
+  return(c(w1, w2, w3))
+}
+```
+
+#Predictor de palabras
+
+Como ejemplo, se presentan los siguientes casos:
+
+Una palabra: "can't"
+
+```{r}
+temp <- next_three("cant", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+
+```
+
+En este caso, se predicen las palabras "wait", "see" y "ai".
+
+
+Una palabra: "see"
+
+```{r}
+temp <- next_three("see", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+```
+
+En este caso, se predicen las palabras "u", "boo" y no fue capaz de determinar una tercera palabra.
+
+
+Dos palabras: "like one"
+
+```{r}
+temp <- next_three("like one", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+```
+
+En este caso, se predicen las palabras "expect", "much" y "greater".
+
+
+Dos palabras: "random stuff"
+
+```{r}
+temp <- next_three("random stuff", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+```
+
+En este caso, se predicen las palabras "makes", "angry" y no fue capaz de determinar una tercera palabra.
+
+
+Una frase: "i dont like this homework time"
+
+```{r}
+temp <- next_three("i dont like this homework time", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+```
+
+En este caso, se predicen las palabras "joshuas", "world" y "war".
+
+
+Una frase: "aint nobody got"
+
+```{r}
+temp <- next_three("aint nobody got", bigram_freq, trigram_freq)
+print(paste(temp[1], " ", temp[2], " ", temp[3]))
+```
+
+En este caso, desgraciadamente, no se predice nada.
+
+
+

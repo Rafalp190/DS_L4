@@ -1,0 +1,206 @@
+---
+title: "Laboratorio 3"
+author: "Oliver Mazariegos, Rafael Leon y Alejandro Vasquez"
+runtime: shiny
+date: "19/09/2018"
+output: 
+  html_document:
+
+    number_sections: false
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+    
+    self_contained: true
+    
+    df_print: kable
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quanteda)
+library(wordcloud)
+library(tm)
+library(RWeka)
+library(ngram)
+library(wordcloud)
+library(ggplot2)
+library("tidyr")
+library("dplyr")
+```
+
+
+# Cálculo de probabilidades
+
+Utilizamos un 0.1% de los todos los datos, por limitaciones de memoria.
+
+```{r}
+set.seed(123)
+
+twittertxt = readLines("data/en_US.twitter.txt",skipNul = TRUE) 
+blogtxt = readLines("data/en_US.blogs.txt", skipNul = TRUE)
+newscon = file("data/en_US.news.txt", 'rb')
+
+newstxt = readLines(newscon) 
+
+twitter_txt = iconv(twittertxt, to="ASCII//TRANSLIT")
+blog_txt = iconv(blogtxt, to="ASCII//TRANSLIT")
+news_txt = iconv(newstxt, to="ASCII//TRANSLIT")
+
+
+# partir los textos
+tweets_sample <- sample(twitter_txt, round(2360148*0.001))
+blogs_sample <- sample(blog_txt, round(899288*0.001))
+news_sample <- sample(news_txt, round(1010242*0.001))
+
+
+all_sample <- c(tweets_sample, blogs_sample, news_sample)
+
+all_sample <- VCorpus(VectorSource(all_sample))
+
+rm(twittertxt)
+rm(twitter_txt)
+rm(blogtxt)
+rm(blog_txt)
+rm(newscon)
+rm(newstxt)
+rm(news_txt)
+rm(tweets_sample)
+rm(blogs_sample)
+rm(news_sample)
+
+# lleva a minÃºsculas
+all_sample <- tm_map(all_sample, content_transformer(tolower))
+
+# quita espacios en blanco
+all_sample <- tm_map(all_sample, content_transformer(stripWhitespace))
+
+# remueve la puntuaciÃ³n
+all_sample <- tm_map(all_sample, content_transformer(removePunctuation))
+
+# remueve palabras vacias genericas
+all_sample <- tm_map(all_sample, content_transformer(removeWords), c(stopwords("english")))
+
+#remueve los numeros
+all_sample <- tm_map(all_sample, content_transformer(removeNumbers))
+
+
+## Unigramas
+
+# crea matriz de terminos
+tdm <- TermDocumentMatrix(all_sample)
+#findFreqTerms(tweet_tdm, lowfreq=30)
+
+## Dataframe de frecuencias
+m <- as.matrix(tdm)
+
+v <- sort(rowSums(m),decreasing=TRUE)
+
+uni_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq)))
+
+
+#Funciones para hacer bi y trigramas
+
+BigramTokenizer <- function(x) {RWeka::NGramTokenizer(x, RWeka::Weka_control(min=2, max=2))}
+ThreegramTokenizer <- function(x) {RWeka::NGramTokenizer(x, RWeka::Weka_control(min=3, max=3))}
+
+
+## Bigramas
+
+bigram <- TermDocumentMatrix(all_sample, control = list(tokenize = BigramTokenizer))
+
+
+m <- as.matrix(bigram)
+v <- sort(rowSums(m),decreasing=TRUE)
+
+bigram_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob= (freq/sum(freq))) %>% 
+  separate(word, c("unigram", "predicted"), " ")
+
+## Trigramas
+
+trigram <- TermDocumentMatrix(all_sample, control = list(tokenize = ThreegramTokenizer))
+
+m <- as.matrix(trigram)
+v <- sort(rowSums(m),decreasing=TRUE)
+
+trigram_freq <- data.frame(word = names(v),freq=v) %>% 
+  mutate(prob = (freq/sum(freq))) %>% 
+  separate(word, c("unigram1","unigram2", "predicted"), " ") %>% 
+  mutate(bigram = paste0(unigram1, " ", unigram2)) %>% 
+  select(bigram, everything()) %>% 
+  select(-c(unigram1, unigram2))
+
+rm(list=c('all_sample', 'bigram', 'm', 'tdm', 'trigram'))
+```
+
+
+# Funcion predictora
+
+La funcion puede iniciar con una sola palabra o una frase. En cualquier caso, toma en cuenta la última o las últimas dos palabras de la frase predice la siguiente palabra
+
+```{r}
+predictor <- function(phrase, bi_freq, tri_freq) {
+  words <- strsplit(phrase, " ")[[1]]
+  if (length(words) > 1) {
+    bigram_to_predict <- tail(words, n = 2)
+    tri_df <- tri_freq %>% 
+      filter(bigram == paste0(bigram_to_predict[1], " ", bigram_to_predict[2])) %>% 
+      arrange(desc(prob))
+    return(tri_df[1,]$predicted)
+  }
+  
+  else if (length(words == 1)) {
+    bi_df <- bi_freq %>% 
+      filter(unigram == words) %>% 
+      arrange(desc(prob))
+    return(bi_df[1,]$predicted)
+  }
+}
+```
+
+# Funcion predictora de las proximas tres palabras
+Sencillamente utiliza la funcion anterior para devolver las siguientes tres palabras predichas.
+
+```{r}
+next_three <- function(phrase, bi_freq, tri_freq) {
+  w1 <- predictor(phrase, bi_freq, tri_freq)
+  w2 <- predictor(paste0(phrase, " ", w1), bi_freq, tri_freq)
+  w3 <- predictor(paste0(phrase, " ", w1, " ", w2), bi_freq, tri_freq)
+  return(c(w1, w2, w3))
+}
+```
+
+#Predictor de palabras
+
+```{r}
+inputPanel(
+    textInput('text_input', h3('Predictor:'), placeholder='Ingrese una frase')
+          )
+
+mainPanel(
+  textOutput(
+    outputId = 'text_input'
+  )
+)
+
+output$text_input <- renderText(
+  {
+    temp <- next_three(input$text_input, bigram_freq, trigram_freq)
+    temp2 <- paste0(temp[1], " ", temp[2], " ", temp[3])
+    print(temp2)
+  }
+)
+
+```
+
